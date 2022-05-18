@@ -37,17 +37,13 @@ int16_t sys_stat_count = 0;
 uint8_t mvl_armed = 0;
 uint8_t mvl_packet_received = 0;
 
-// mavlink_message_t msg;
-// uint8_t buf[MAVLINK_MAX_PACKET_LEN];
-
-int paramListSize = 38;
+static const char * config_base_addr = &config;
 int paramListPartIndicator = -1;
-int parameterChangeIndicator = -1;
-int parameterMatch = 0;
 
 mavlink_param_set_t set;
 char * parameter_id;
-uint32_t parameter_index;
+mavlink_message_t msg;
+
 
 void MVL_Send_Param_UINT8( const uint8_t paramValue, const char * parameterName, const int listsize, const int index );
 void MVL_Send_Param_INT32( const int32_t paramValue, const char * parameterName, const int listsize, const int index );
@@ -88,17 +84,6 @@ void telem_update( void )
 
 	uint8_t rxbyte;
 
-#if 0
-	while ( !circular_buf_empty( _buf_handle ) ) {
-		circular_buf_getc( _buf_handle , &rxbyte );
-		mvl_packet_received = mavlink_parse_char( MAV_CHANNEL, rxbyte,
-		                      &mvl_rx_message,
-		                      &mvl_rx_status );
-		if ( mvl_packet_received ) {
-			break;
-		}
-	}
-#else
 	while ( lwrb_get_full( &usart_rx_rb ) ) {
 		lwrb_read( &usart_rx_rb, &rxbyte, 1 );
 		mvl_packet_received = mavlink_parse_char( MAV_CHANNEL, rxbyte,
@@ -108,7 +93,6 @@ void telem_update( void )
 			break;
 		}
 	}
-#endif
 
 	/* ====================== received MAVLink Message Handling ==================
 	 *  If a full incoming MAVLink message is received, AND the message
@@ -130,23 +114,18 @@ void telem_update( void )
 
 		LL_GPIO_SetOutputPin( testPin2_GPIO_Port, testPin2_Pin );
 
-		// debug_putc( ( uint8_t )mvl_rx_message.msgid );
-
 		mvl_packet_received = 0; //reset the "packet received" flag
 		switch ( mvl_rx_message.msgid ) {
 		case MAVLINK_MSG_ID_MANUAL_CONTROL: //#69 https://mavlink.io/en/messages/common.html#MANUAL_CONTROL
 			MVL_Handle_Manual_Control( &mvl_rx_message );
 			break;
 		case MAVLINK_MSG_ID_PARAM_REQUEST_LIST: //#21 https://mavlink.io/en/messages/common.html#PARAM_REQUEST_LIST
-			// LL_GPIO_SetOutputPin( testPin2_GPIO_Port, testPin2_Pin );
 			MVL_Handle_Param_Request_List( &mvl_rx_message );
-			// LL_GPIO_ResetOutputPin( testPin2_GPIO_Port, testPin2_Pin );
 			break;
 		case MAVLINK_MSG_ID_PARAM_SET: //#23 https://mavlink.io/en/messages/common.html#PARAM_SET
 			mavlink_msg_param_set_decode( &mvl_rx_message, &set );
-			parameter_id = ( char * ) set.param_id;
-			parameter_index = get_param_index_from_id( parameter_id );
-			parameterChangeIndicator = 0;
+			uint32_t index = get_param_index_from_id( ( char * ) set.param_id );
+			telem_set_parameter( index, &set );
 			break;
 		case MAVLINK_MSG_ID_COMMAND_LONG: //#76 https://mavlink.io/en/messages/common.html#COMMAND_LONG
 			MVL_Handle_Command_Long( &mvl_rx_message );
@@ -162,6 +141,76 @@ void telem_update( void )
 
 	}
 
+}
+
+void telem_set_parameter( uint32_t index, mavlink_param_set_t * param_set )
+{
+	MAV_PARAM_TYPE param_type = get_param_mav_type( index );
+	mavlink_param_union_t u_param;
+	u_param.param_float = param_set->param_value;
+	if ( index >= 0 ) {
+		// For read-only  respond with new val followed by original val
+		// https://ardupilot.org/dev/docs/mavlink-get-set-params.html
+		if ( param_type == MAV_PARAM_TYPE_UINT8 ) {
+			uint8_t * val_ptr_U8 = ( uint8_t * )( config_base_addr + get_param_offset( index ) );
+			if ( get_param_read_write( index ) ) {
+				*val_ptr_U8 = u_param.param_uint8; // update the config struct member
+			} else {
+				MVL_Send_Param_UINT8( u_param.param_uint8, get_param_name( index ), get_sizeof_param_index(), index  );
+			}
+			MVL_Send_Param_UINT8( *val_ptr_U8, get_param_name( index ), get_sizeof_param_index(), index  );
+		}	else if ( param_type == MAV_PARAM_TYPE_INT32 ) {
+			int32_t * val_ptr_32 = ( uint32_t * )( config_base_addr + get_param_offset( index ) );
+			if ( get_param_read_write( index ) ) {
+				*val_ptr_32 = u_param.param_int32; // update the config struct member
+			} else {
+				MVL_Send_Param_INT32( u_param.param_int32, get_param_name( index ), get_sizeof_param_index(), index  );
+			}
+			MVL_Send_Param_INT32( *val_ptr_32, get_param_name( index ), get_sizeof_param_index(), index  );
+		}	else if ( param_type == MAV_PARAM_TYPE_UINT32 ) {
+			uint32_t * val_ptr_U32 = ( uint32_t * )( config_base_addr + get_param_offset( index ) );
+			if ( get_param_read_write( index ) ) {
+				*val_ptr_U32 = u_param.param_uint32; // update the config struct member
+			} else {
+				MVL_Send_Param_UINT32( u_param.param_uint32, get_param_name( index ), get_sizeof_param_index(), index  );
+			}
+			MVL_Send_Param_UINT32( *val_ptr_U32, get_param_name( index ), get_sizeof_param_index(), index  );
+		} else if ( param_type == MAV_PARAM_TYPE_REAL32 ) {
+			float * val_ptr_F = ( uint32_t * )( config_base_addr + get_param_offset( index ) );
+			if ( get_param_read_write( index ) ) {
+				*val_ptr_F = u_param.param_float; // update the config struct member
+			} else {
+				MVL_Send_Param_FLOAT( u_param.param_float, get_param_name( index ), get_sizeof_param_index(), index  );
+			}
+			MVL_Send_Param_FLOAT( *val_ptr_F, get_param_name( index ), get_sizeof_param_index(), index  );
+		}
+	}
+}
+
+/**
+ * @brief Pack a param_value message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
+ *
+ * @param param_id  Onboard parameter id, terminated by NULL if the length is less than 16 human-readable chars and WITHOUT null termination (NULL) byte if the length is exactly 16 chars - applications have to provide 16+1 bytes storage if the ID is stored as string
+ * @param param_value  Onboard parameter value
+ * @param param_type  Onboard parameter type.
+ * @param param_count  Total number of onboard parameters
+ * @param param_index  Index of this onboard parameter
+ * @return length of the message in bytes (excluding serial stream start sign)
+ *
+static inline uint16_t mavlink_msg_param_value_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
+                               const char *param_id, float param_value, uint8_t param_type, uint16_t param_count, uint16_t param_index)
+*/
+
+// uint8_t parameterType = MAV_PARAM_TYPE_REAL32;
+
+void telem_send_parameter_float( float param_val, const char * param_id, uint32_t listsize, int index )
+{
+	mavlink_msg_param_value_pack( MAV_SYSTEM_ID, MAV_COMPONENT_ID, &msg, param_id, param_val, MAV_PARAM_TYPE_REAL32, listsize, index );
+	uint16_t tx_buflen = mavlink_msg_to_send_buffer( tx_byte_buffer, &msg );
+	UVOS_TELEM_puts( tx_byte_buffer, tx_buflen );
 }
 
 /* Let QGroundControl know a vehicle is present, we send a heartbeat ~ every 1s */
@@ -251,8 +300,6 @@ void telem_system_stats( void )
 	MVL_Transmit_Message( &mvl_tx_message );
 }
 
-#include "util/parameterNames.h"
-
 #define PARAM_MODULUS (6)
 
 void telem_send_queued_params( void )
@@ -297,60 +344,6 @@ void telem_send_queued_params( void )
 				float paramValueF = *( float * ) addr;
 				MVL_Send_Param_FLOAT( paramValueF, get_param_name( i ), num_params, i );
 			}
-		}
-		paramListPartIndicator++;
-	} else {
-		paramListPartIndicator = -1;
-	}
-
-#elseif 0
-
-	if ( paramListPartIndicator >= 0 && paramListPartIndicator <= 6 ) {
-		if ( paramListPartIndicator == 0 ) {
-			MVL_Send_Param_UINT8( config.version,       parameterName_version,      paramListSize, 0  );
-			MVL_Send_Param_UINT32( config.channel_1_fs, parameterName_channel_1_fs, paramListSize, 1  );
-			MVL_Send_Param_UINT32( config.channel_2_fs, parameterName_channel_2_fs, paramListSize, 2  );
-			MVL_Send_Param_UINT32( config.channel_3_fs, parameterName_channel_3_fs, paramListSize, 3  );
-			MVL_Send_Param_UINT32( config.channel_4_fs, parameterName_channel_4_fs, paramListSize, 4  );
-			MVL_Send_Param_UINT32( config.channel_5_fs, parameterName_channel_5_fs, paramListSize, 5  );
-			MVL_Send_Param_UINT32( config.channel_6_fs, parameterName_channel_6_fs, paramListSize, 6  );
-		} else if ( paramListPartIndicator == 1 ) {
-			MVL_Send_Param_FLOAT( config.B_madgwick,    parameterName_B_madgwick,   paramListSize, 7  );
-			MVL_Send_Param_FLOAT( config.B_accel,       parameterName_B_accel,      paramListSize, 8  );
-			MVL_Send_Param_FLOAT( config.B_gyro,        parameterName_B_gyro,       paramListSize, 9  );
-			MVL_Send_Param_FLOAT( config.B_mag,         parameterName_B_mag,        paramListSize, 10 );
-		} else if ( paramListPartIndicator == 2 ) {
-			MVL_Send_Param_FLOAT( config.MagErrorX,     parameterName_MagErrorX,    paramListSize, 11 );
-			MVL_Send_Param_FLOAT( config.MagErrorY,     parameterName_MagErrorY,    paramListSize, 12 );
-			MVL_Send_Param_FLOAT( config.MagErrorZ,     parameterName_MagErrorZ,    paramListSize, 13 );
-			MVL_Send_Param_FLOAT( config.MagScaleX,     parameterName_MagScaleX,    paramListSize, 14 );
-			MVL_Send_Param_FLOAT( config.MagScaleY,     parameterName_MagScaleY,    paramListSize, 15 );
-			MVL_Send_Param_FLOAT( config.MagScaleZ,     parameterName_MagScaleZ,    paramListSize, 16 );
-		} else if ( paramListPartIndicator == 3 ) {
-			MVL_Send_Param_FLOAT( config.i_limit,        parameterName_i_limit,        paramListSize, 17 );
-			MVL_Send_Param_FLOAT( config.maxRoll,        parameterName_maxRoll,        paramListSize, 18 );
-			MVL_Send_Param_FLOAT( config.maxPitch,       parameterName_maxPitch,       paramListSize, 19 );
-			MVL_Send_Param_FLOAT( config.maxYaw,         parameterName_maxYaw,         paramListSize, 20 );
-		} else if ( paramListPartIndicator == 4 ) {
-			MVL_Send_Param_FLOAT( config.Kp_roll_angle,  parameterName_Kp_roll_angle,  paramListSize, 21 );
-			MVL_Send_Param_FLOAT( config.Ki_roll_angle,  parameterName_Ki_roll_angle,  paramListSize, 22 );
-			MVL_Send_Param_FLOAT( config.Kd_roll_angle,  parameterName_Kd_roll_angle,  paramListSize, 23 );
-			MVL_Send_Param_FLOAT( config.B_loop_roll,    parameterName_B_loop_roll,    paramListSize, 24 );
-			MVL_Send_Param_FLOAT( config.Kp_pitch_angle, parameterName_Kp_pitch_angle, paramListSize, 25 );
-			MVL_Send_Param_FLOAT( config.Ki_pitch_angle, parameterName_Ki_pitch_angle, paramListSize, 26 );
-			MVL_Send_Param_FLOAT( config.Kd_pitch_angle, parameterName_Kd_pitch_angle, paramListSize, 27 );
-			MVL_Send_Param_FLOAT( config.B_loop_pitch,   parameterName_B_loop_pitch,   paramListSize, 28 );
-		} else if ( paramListPartIndicator == 5 ) {
-			MVL_Send_Param_FLOAT( config.Kp_roll_rate,   parameterName_Kp_roll_rate,   paramListSize, 29 );
-			MVL_Send_Param_FLOAT( config.Ki_roll_rate,   parameterName_Ki_roll_rate,   paramListSize, 30 );
-			MVL_Send_Param_FLOAT( config.Kd_roll_rate,   parameterName_Kd_roll_rate,   paramListSize, 31 );
-			MVL_Send_Param_FLOAT( config.Kp_pitch_rate,  parameterName_Kp_pitch_rate,  paramListSize, 32 );
-			MVL_Send_Param_FLOAT( config.Ki_pitch_rate,  parameterName_Ki_pitch_rate,  paramListSize, 33 );
-			MVL_Send_Param_FLOAT( config.Kd_pitch_rate,  parameterName_Kd_pitch_rate,  paramListSize, 34 );
-		} else if ( paramListPartIndicator == 6 ) {
-			MVL_Send_Param_FLOAT( config.Kp_yaw,  			 parameterName_Kp_yaw,  			 paramListSize, 35 );
-			MVL_Send_Param_FLOAT( config.Ki_yaw,  			 parameterName_Ki_yaw,  			 paramListSize, 36 );
-			MVL_Send_Param_FLOAT( config.Kd_yaw,  			 parameterName_Kd_yaw,  			 paramListSize, 37 );
 		}
 		paramListPartIndicator++;
 	} else {
@@ -428,6 +421,8 @@ void telem_send_queued_param_by_index( uint32_t index )
 
 	if ( param_type == MAV_PARAM_TYPE_UINT8 ) {
 		MVL_Send_Param_UINT8( *( uint8_t * ) addr, get_param_name( index ), get_sizeof_param_index(), index  );
+	}	else if ( param_type == MAV_PARAM_TYPE_INT32 ) {
+		MVL_Send_Param_INT32( *( int32_t * ) addr, get_param_name( index ), get_sizeof_param_index(), index  );
 	}	else if ( param_type == MAV_PARAM_TYPE_UINT32 ) {
 		MVL_Send_Param_UINT32( *( uint32_t * ) addr, get_param_name( index ), get_sizeof_param_index(), index  );
 	} else if ( param_type == MAV_PARAM_TYPE_REAL32 ) {
@@ -439,20 +434,12 @@ void telem_send_queued_param_by_index( uint32_t index )
 
 void MVL_Transmit_Message( mavlink_message_t * mvl_msg_ptr )
 {
-
 	LL_GPIO_SetOutputPin( testPin1_GPIO_Port, testPin1_Pin );
 
 	uint16_t tx_buflen = mavlink_msg_to_send_buffer( tx_byte_buffer, mvl_msg_ptr );
-
-	// debug_puts( tx_byte_buffer, tx_buflen );
-
-	// UVOS_USART_puts( USART2, tx_byte_buffer, tx_buflen );
 	UVOS_TELEM_puts( tx_byte_buffer, tx_buflen );
 
-	// delay( 5 );
-
 	LL_GPIO_ResetOutputPin( testPin1_GPIO_Port, testPin1_Pin );
-
 }
 
 void MVL_Handle_Manual_Control( mavlink_message_t * mvl_msg_ptr )
@@ -465,40 +452,9 @@ void MVL_Handle_Manual_Control( mavlink_message_t * mvl_msg_ptr )
 	MVL_Transmit_Message( &mvl_tx_message );
 }
 
-
 void MVL_Handle_Param_Request_List( mavlink_message_t * mvl_msg_ptr )
 {
-
 	paramListPartIndicator = 0;
-
-#if 0
-
-	int32_t paramVal;
-	float paramVal_f;
-
-	MVL_Send_Param_UINT8( config.version,       parameterName_version,      paramListSize, 0  );
-
-	MVL_Send_Param_UINT32( config.channel_1_fs, parameterName_channel_1_fs, paramListSize, 1  );
-	MVL_Send_Param_UINT32( config.channel_2_fs, parameterName_channel_2_fs, paramListSize, 2  );
-	MVL_Send_Param_UINT32( config.channel_3_fs, parameterName_channel_3_fs, paramListSize, 3  );
-	MVL_Send_Param_UINT32( config.channel_4_fs, parameterName_channel_4_fs, paramListSize, 4  );
-	MVL_Send_Param_UINT32( config.channel_5_fs, parameterName_channel_5_fs, paramListSize, 5  );
-	MVL_Send_Param_UINT32( config.channel_6_fs, parameterName_channel_6_fs, paramListSize, 6  );
-
-	MVL_Send_Param_FLOAT( config.B_madgwick,    parameterName_B_madgwick,   paramListSize, 7  );
-	MVL_Send_Param_FLOAT( config.B_accel,       parameterName_B_accel,      paramListSize, 8  );
-	MVL_Send_Param_FLOAT( config.B_gyro,        parameterName_B_gyro,       paramListSize, 9  );
-	MVL_Send_Param_FLOAT( config.B_mag,         parameterName_B_mag,        paramListSize, 10 );
-
-	// MVL_Send_Param_FLOAT( config.MagErrorX,     parameterName_MagErrorX,    paramListSize, 11 );
-	// MVL_Send_Param_FLOAT( config.MagErrorY,     parameterName_MagErrorY,    paramListSize, 12 );
-	// MVL_Send_Param_FLOAT( config.MagErrorZ,     parameterName_MagErrorZ,    paramListSize, 13 );
-	// MVL_Send_Param_FLOAT( config.MagScaleX,     parameterName_MagScaleX,    paramListSize, 14 );
-	// MVL_Send_Param_FLOAT( config.MagScaleY,     parameterName_MagScaleY,    paramListSize, 15 );
-	// MVL_Send_Param_FLOAT( config.MagScaleZ,     parameterName_MagScaleZ,    paramListSize, 16 );
-
-#endif
-
 }
 
 void MVL_Handle_Command_Long( mavlink_message_t * mvl_msg_ptr )

@@ -8,6 +8,7 @@ struct params_s {
 	const char * paramName;
 	uintptr_t offset;
 	MAV_PARAM_TYPE mav_type;
+	bool read_write;
 };
 
 
@@ -68,64 +69,64 @@ void storage_set_defaults( void )
 	config.Ki_yaw = 0.05;          //Yaw I-gain
 	config.Kd_yaw = 0.00015;       //Yaw D-gain (be careful when increasing too high, motors will begin to overheat!)
 
-  config.z_Save = 0;       			 // Flag to save setup (default to 0, set to 1 to save)
+	config.z_Save = 0;       			 // Flag to save setup (default to 0, set to 1 to save)
 
 }
 
 
 // typedef struct params_s params_t;
 static const struct params_s param_arr[] = {
-[	0	]	=	{	.paramName	=	"version"	,	.offset = offsetof( config_t,	version	),	.mav_type =	MAV_PARAM_TYPE_UINT8	  },
-														
-														
-[	1	]	=	{	.paramName	=	"channel_1_fs"	,	.offset = offsetof( config_t,	channel_1_fs	),	.mav_type =	MAV_PARAM_TYPE_UINT32	  },
-[	2	]	=	{	.paramName	=	"channel_2_fs"	,	.offset = offsetof( config_t,	channel_2_fs	),	.mav_type =	MAV_PARAM_TYPE_UINT32	  },
-[	3	]	=	{	.paramName	=	"channel_3_fs"	,	.offset = offsetof( config_t,	channel_3_fs	),	.mav_type =	MAV_PARAM_TYPE_UINT32	  },
-[	4	]	=	{	.paramName	=	"channel_4_fs"	,	.offset = offsetof( config_t,	channel_4_fs	),	.mav_type =	MAV_PARAM_TYPE_UINT32	  },
-[	5	]	=	{	.paramName	=	"channel_5_fs"	,	.offset = offsetof( config_t,	channel_5_fs	),	.mav_type =	MAV_PARAM_TYPE_UINT32	  },
-[	6	]	=	{	.paramName	=	"channel_6_fs"	,	.offset = offsetof( config_t,	channel_6_fs	),	.mav_type =	MAV_PARAM_TYPE_UINT32	  },
-														
-														
-[	7	]	=	{	.paramName	=	"B_madgwick"	,	.offset = offsetof( config_t,	B_madgwick	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	8	]	=	{	.paramName	=	"B_accel"	,	.offset = offsetof( config_t,	B_accel	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	9	]	=	{	.paramName	=	"B_gyro"	,	.offset = offsetof( config_t,	B_gyro	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	10	]	=	{	.paramName	=	"B_mag"	,	.offset = offsetof( config_t,	B_mag	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-														
-														
-[	11	]	=	{	.paramName	=	"MagErrorX"	,	.offset = offsetof( config_t,	MagErrorX	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	12	]	=	{	.paramName	=	"MagErrorY"	,	.offset = offsetof( config_t,	MagErrorY	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	13	]	=	{	.paramName	=	"MagErrorZ"	,	.offset = offsetof( config_t,	MagErrorZ	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	14	]	=	{	.paramName	=	"MagScaleX"	,	.offset = offsetof( config_t,	MagScaleX	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	15	]	=	{	.paramName	=	"MagScaleY"	,	.offset = offsetof( config_t,	MagScaleY	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	16	]	=	{	.paramName	=	"MagScaleZ"	,	.offset = offsetof( config_t,	MagScaleZ	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-														
-														
-[	17	]	=	{	.paramName	=	"i_limit"	,	.offset = offsetof( config_t,	i_limit	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	18	]	=	{	.paramName	=	"maxRoll"	,	.offset = offsetof( config_t,	maxRoll	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	19	]	=	{	.paramName	=	"maxPitch"	,	.offset = offsetof( config_t,	maxPitch	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	20	]	=	{	.paramName	=	"maxYaw "	,	.offset = offsetof( config_t,	maxYaw 	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-														
-[	21	]	=	{	.paramName	=	"Kp_roll_angle"	,	.offset = offsetof( config_t,	Kp_roll_angle	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	22	]	=	{	.paramName	=	"Ki_roll_angle"	,	.offset = offsetof( config_t,	Ki_roll_angle	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	23	]	=	{	.paramName	=	"Kd_roll_angle"	,	.offset = offsetof( config_t,	Kd_roll_angle	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	24	]	=	{	.paramName	=	"B_loop_roll"	,	.offset = offsetof( config_t,	B_loop_roll	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	25	]	=	{	.paramName	=	"Kp_pitch_angle"	,	.offset = offsetof( config_t,	Kp_pitch_angle	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	26	]	=	{	.paramName	=	"Ki_pitch_angle"	,	.offset = offsetof( config_t,	Ki_pitch_angle	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	27	]	=	{	.paramName	=	"Kd_pitch_angle"	,	.offset = offsetof( config_t,	Kd_pitch_angle	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	28	]	=	{	.paramName	=	"B_loop_pitch"	,	.offset = offsetof( config_t,	B_loop_pitch	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-														
-[	29	]	=	{	.paramName	=	"Kp_roll_rate"	,	.offset = offsetof( config_t,	Kp_roll_rate	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	30	]	=	{	.paramName	=	"Ki_roll_rate"	,	.offset = offsetof( config_t,	Ki_roll_rate	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	31	]	=	{	.paramName	=	"Kd_roll_rate"	,	.offset = offsetof( config_t,	Kd_roll_rate	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	32	]	=	{	.paramName	=	"Kp_pitch_rate"	,	.offset = offsetof( config_t,	Kp_pitch_rate	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	33	]	=	{	.paramName	=	"Ki_pitch_rate"	,	.offset = offsetof( config_t,	Ki_pitch_rate	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	34	]	=	{	.paramName	=	"Kd_pitch_rate"	,	.offset = offsetof( config_t,	Kd_pitch_rate	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-														
-[	35	]	=	{	.paramName	=	"Kp_yaw"	,	.offset = offsetof( config_t,	Kp_yaw	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	36	]	=	{	.paramName	=	"Ki_yaw"	,	.offset = offsetof( config_t,	Ki_yaw	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-[	37	]	=	{	.paramName	=	"Kd_yaw"	,	.offset = offsetof( config_t,	Kd_yaw	),	.mav_type =	MAV_PARAM_TYPE_REAL32	  },
-														
-[	38	]	=	{	.paramName	=	"z_Save"	,	.offset = offsetof( config_t,	z_Save	),	.mav_type =	MAV_PARAM_TYPE_UINT8	  },
+[	0	]	=	{	.paramName	=	"version"	,	.offset = offsetof( config_t,	version	),	.mav_type =	MAV_PARAM_TYPE_UINT8	,	.read_write =	false	  },
+																	
+																	
+[	1	]	=	{	.paramName	=	"channel_1_fs"	,	.offset = offsetof( config_t,	channel_1_fs	),	.mav_type =	MAV_PARAM_TYPE_UINT32	,	.read_write =	true	  },
+[	2	]	=	{	.paramName	=	"channel_2_fs"	,	.offset = offsetof( config_t,	channel_2_fs	),	.mav_type =	MAV_PARAM_TYPE_UINT32	,	.read_write =	true	  },
+[	3	]	=	{	.paramName	=	"channel_3_fs"	,	.offset = offsetof( config_t,	channel_3_fs	),	.mav_type =	MAV_PARAM_TYPE_UINT32	,	.read_write =	true	  },
+[	4	]	=	{	.paramName	=	"channel_4_fs"	,	.offset = offsetof( config_t,	channel_4_fs	),	.mav_type =	MAV_PARAM_TYPE_UINT32	,	.read_write =	true	  },
+[	5	]	=	{	.paramName	=	"channel_5_fs"	,	.offset = offsetof( config_t,	channel_5_fs	),	.mav_type =	MAV_PARAM_TYPE_UINT32	,	.read_write =	true	  },
+[	6	]	=	{	.paramName	=	"channel_6_fs"	,	.offset = offsetof( config_t,	channel_6_fs	),	.mav_type =	MAV_PARAM_TYPE_UINT32	,	.read_write =	true	  },
+																	
+																	
+[	7	]	=	{	.paramName	=	"B_madgwick"	,	.offset = offsetof( config_t,	B_madgwick	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	8	]	=	{	.paramName	=	"B_accel"	,	.offset = offsetof( config_t,	B_accel	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	9	]	=	{	.paramName	=	"B_gyro"	,	.offset = offsetof( config_t,	B_gyro	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	10	]	=	{	.paramName	=	"B_mag"	,	.offset = offsetof( config_t,	B_mag	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+																	
+																	
+[	11	]	=	{	.paramName	=	"MagErrorX"	,	.offset = offsetof( config_t,	MagErrorX	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	12	]	=	{	.paramName	=	"MagErrorY"	,	.offset = offsetof( config_t,	MagErrorY	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	13	]	=	{	.paramName	=	"MagErrorZ"	,	.offset = offsetof( config_t,	MagErrorZ	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	14	]	=	{	.paramName	=	"MagScaleX"	,	.offset = offsetof( config_t,	MagScaleX	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	15	]	=	{	.paramName	=	"MagScaleY"	,	.offset = offsetof( config_t,	MagScaleY	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	16	]	=	{	.paramName	=	"MagScaleZ"	,	.offset = offsetof( config_t,	MagScaleZ	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+																	
+																	
+[	17	]	=	{	.paramName	=	"i_limit"	,	.offset = offsetof( config_t,	i_limit	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	18	]	=	{	.paramName	=	"maxRoll"	,	.offset = offsetof( config_t,	maxRoll	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	19	]	=	{	.paramName	=	"maxPitch"	,	.offset = offsetof( config_t,	maxPitch	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	20	]	=	{	.paramName	=	"maxYaw "	,	.offset = offsetof( config_t,	maxYaw 	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+																	
+[	21	]	=	{	.paramName	=	"Kp_roll_angle"	,	.offset = offsetof( config_t,	Kp_roll_angle	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	22	]	=	{	.paramName	=	"Ki_roll_angle"	,	.offset = offsetof( config_t,	Ki_roll_angle	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	23	]	=	{	.paramName	=	"Kd_roll_angle"	,	.offset = offsetof( config_t,	Kd_roll_angle	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	24	]	=	{	.paramName	=	"B_loop_roll"	,	.offset = offsetof( config_t,	B_loop_roll	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	25	]	=	{	.paramName	=	"Kp_pitch_angle"	,	.offset = offsetof( config_t,	Kp_pitch_angle	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	26	]	=	{	.paramName	=	"Ki_pitch_angle"	,	.offset = offsetof( config_t,	Ki_pitch_angle	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	27	]	=	{	.paramName	=	"Kd_pitch_angle"	,	.offset = offsetof( config_t,	Kd_pitch_angle	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	28	]	=	{	.paramName	=	"B_loop_pitch"	,	.offset = offsetof( config_t,	B_loop_pitch	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+																	
+[	29	]	=	{	.paramName	=	"Kp_roll_rate"	,	.offset = offsetof( config_t,	Kp_roll_rate	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	30	]	=	{	.paramName	=	"Ki_roll_rate"	,	.offset = offsetof( config_t,	Ki_roll_rate	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	31	]	=	{	.paramName	=	"Kd_roll_rate"	,	.offset = offsetof( config_t,	Kd_roll_rate	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	32	]	=	{	.paramName	=	"Kp_pitch_rate"	,	.offset = offsetof( config_t,	Kp_pitch_rate	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	33	]	=	{	.paramName	=	"Ki_pitch_rate"	,	.offset = offsetof( config_t,	Ki_pitch_rate	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	34	]	=	{	.paramName	=	"Kd_pitch_rate"	,	.offset = offsetof( config_t,	Kd_pitch_rate	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+																	
+[	35	]	=	{	.paramName	=	"Kp_yaw"	,	.offset = offsetof( config_t,	Kp_yaw	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	36	]	=	{	.paramName	=	"Ki_yaw"	,	.offset = offsetof( config_t,	Ki_yaw	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+[	37	]	=	{	.paramName	=	"Kd_yaw"	,	.offset = offsetof( config_t,	Kd_yaw	),	.mav_type =	MAV_PARAM_TYPE_REAL32	,	.read_write =	true	  },
+																	
+[	38	]	=	{	.paramName	=	"z_Save"	,	.offset = offsetof( config_t,	z_Save	),	.mav_type =	MAV_PARAM_TYPE_UINT8	,	.read_write =	true	  },
 };
 
 uint32_t get_sizeof_param_index( void )
@@ -148,6 +149,11 @@ MAV_PARAM_TYPE get_param_mav_type( uint32_t index )
 	return param_arr[ index ].mav_type;
 }
 
+bool get_param_read_write( uint32_t index )
+{
+	return param_arr[ index ].read_write;
+}
+
 bool check_param_match( const char * paramName, char * key )
 {
 	for ( uint32_t j = 0; paramName[j] != '\0'; j++ ) {
@@ -161,8 +167,11 @@ bool check_param_match( const char * paramName, char * key )
 // https://ardupilot.org/dev/docs/mavlink-get-set-params.html
 uint32_t get_param_index_from_id( char * param_id )
 {
-	uint32_t cnt = get_sizeof_param_index();
+	uint32_t cnt = get_sizeof_param_index() - 1;
 	for ( uint32_t i = 0; i <= cnt; ++i ) {
-		bool match = check_param_match( param_arr[i].paramName, param_id );
+		if ( check_param_match( param_arr[i].paramName, param_id ) ) {
+			return i;
+		}
 	}
+	return -1;
 }
