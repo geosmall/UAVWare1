@@ -93,7 +93,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-  oav_main();
+  UAVW_main();
 }
 
 #endif // !defined(ARDUINO)

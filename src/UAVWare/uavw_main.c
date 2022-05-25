@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "oav_defines.h"
+#include "uavw_defines.h"
 #include "mpu.h"
 #include "tasks.h"
 #include "debug.h"
@@ -16,7 +16,7 @@ void _putchar( char c )
 	UVOS_TELEM_putc( c );
 }
 
-void OAV_main( void )
+void UAVW_main( void )
 {
 
 	UVOS_PERIPH_init();

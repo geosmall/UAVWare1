@@ -4,7 +4,7 @@
 extern "C" {
 #endif
 
-void OAV_main( void );
+void UAVW_main( void );
 
 #ifdef __cplusplus
 }

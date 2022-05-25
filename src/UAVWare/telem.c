@@ -1,5 +1,5 @@
 #include "telem.h"
-#include "oav_defines.h"
+#include "uavw_defines.h"
 #include "../uvos/uvos_time.h"
 #include "../uvos/uvos_usart.h"
 #include "../libraries/mavlink/common/mavlink.h"
