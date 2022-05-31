@@ -45,6 +45,10 @@ void UAVW_main( void )
 
 	telem_init();
 
+  actuator_init();
+  actuator_enable_outputs();
+  actuator_update_outputs();
+
 	const uint32_t hb_interval = 1000; //heartbeat interval in milliseconds - 1 second
 	uint32_t t_last_hb = 0;
 	const uint32_t sys_stat_interval = 100; //10 system status messages per second

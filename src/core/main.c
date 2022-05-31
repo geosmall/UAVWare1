@@ -93,7 +93,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-  UAVW_main();
+  oav_main();
 }
 
 #endif // !defined(ARDUINO)
@@ -112,6 +112,7 @@ void MX_Init(void)
   MX_TIM2_Init();
   MX_TIM11_Init();
   MX_USART6_UART_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
   
   LL_SYSTICK_EnableIT();
