@@ -1,4 +1,4 @@
-#include "src/UAVware/uavw_main.h"
+#include "src/UAVware/uavw_init.h"
 #include "src/UAVware/telem.h"
 
 void setup()
