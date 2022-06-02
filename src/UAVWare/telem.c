@@ -29,10 +29,6 @@ const uint8_t MAV_COMPONENT_ID = 1; //Component ID and System ID identify us to 
 const uint8_t MAV_SYSTEM_ID = 1;
 const uint8_t MAV_CHANNEL = MAVLINK_COMM_0;  //MAVLink channel 1 appears to be required at least for Blue Robotics QGC
 
-const uint32_t hb_interval = 1000;					// heartbeat interval in milliseconds - 1 second
-uint32_t t_last_hb = 0;
-const uint32_t sys_stat_interval = 100;			// 10 system status messages per second
-uint32_t t_last_sys_stat = 0;
 int16_t sys_stat_count = 0;
 uint8_t mvl_armed = 0;
 uint8_t mvl_packet_received = 0;
