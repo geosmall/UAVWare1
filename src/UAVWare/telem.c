@@ -4,7 +4,7 @@
 #include "../uvos/uvos_usart.h"
 #include "../libraries/mavlink/common/mavlink.h"
 #include "../libraries/lwrb/lwrb.h"
-#include "storage.h"
+#include "config.h"
 
 #include "stm32yyxx_ll.h"
 

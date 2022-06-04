@@ -5,12 +5,11 @@
 #include "mpu.h"
 #include "tasks.h"
 #include "debug.h"
-#include "storage.h"
 
 
 void failloop( int val );
 
-
+// used by printf.c library
 void _putchar( char c )
 {
 	UVOS_TELEM_putc( c );
@@ -18,7 +17,6 @@ void _putchar( char c )
 
 void UAVW_init( void )
 {
-
 	UVOS_PERIPH_init();
 
 	debug_init();
@@ -49,33 +47,7 @@ void UAVW_init( void )
   actuator_enable_outputs();
   actuator_update_outputs();
 
-
-	return; // Temporary
-
-
-	RC_TASK_init();
-	SYS_STATS_TASK_init();
-	HEARTBEAT_TASK_init();
-
-// Add tasks to schedule.
-// Parameters are:
-// A. Task name
-// B. Initial delay / offset (in Ticks)
-// C. Task period (in Ticks): Must be > 0
-//            A                        B  C
-	sch_add_task( RC_TASK_update,          0, 1 ); 		// Update RC command
-	sch_add_task( SYS_STATS_TASK_update,   0, 100 ); 	// Update MAVLink system stats
-	sch_add_task( HEARTBEAT_TASK_update,   0, 1000 ); // MAVLink heartbeat update
-
-// Start the scheduler
-	sch_start();
-
-	while ( 1 ) {
-		sch_dispatch_tasks();
-	}
-
 	return 1;
-
 }
 
 // 2 - low battery at powerup - if enabled by config

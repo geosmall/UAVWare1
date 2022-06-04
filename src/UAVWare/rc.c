@@ -1,4 +1,5 @@
 #include "rc.h"
+#include "ibus.h"
 
 rc_command_t my_rc_command;
 // angle_t my_target_angle;

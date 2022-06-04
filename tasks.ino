@@ -1,7 +1,3 @@
-#include "tasks.h"
-#include "../uvos/uvos_led.h"
-
-
 void RC_TASK_init ( void )
 {
 	rc_init();
@@ -34,5 +30,5 @@ void HEARTBEAT_TASK_init ( void )
 void HEARTBEAT_TASK_update ( void )
 {
 	telem_heartbeat();
-	UVOS_LED_toggle();
+	led_status_toggle();
 }

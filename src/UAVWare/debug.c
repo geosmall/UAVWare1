@@ -3,35 +3,16 @@
 #include "../uvos/hardware.h"
 
 
-static uint8_t debug_init_done;
-
-
 void debug_init( void )
 {
-
-	debug_put_newline();
-	debug( "###  UAVware  ###\n" );
+	debug_putc( '\n' );
+	debug( "###  UAVWare  ###\n" );
 	debug( "debug: init done\n" );
-
-	debug( "debug: " );
-	// if (config_hw_revision == CONFIG_HW_REVISION_EVOLUTION) {
-	// 	debug("TGY EVOLUTION");
-	// } else {
-	// 	debug("FLYSKY/TGY I6S");
-	// }
-	debug( "\n" );
-	debug_flush();
-
-	debug_init_done = 1;
-
+	debug_cls();
 }
 
-void debug_flush( void )
+void debug_cls( void )
 {
-	if ( !debug_init_done ) {
-		return;
-	}
-	//
 	// debug_putc(0x1B); // \e, Escape
 	// debug("\033[2J\r");
 	debug( "\x1b[2J" );
@@ -54,7 +35,7 @@ void debug_puts( char * data, uint16_t len )
 	}
 }
 
-void debug( char * data )
+void debug(const char *data)
 {
 	uint8_t c = *data++;
 	while ( c ) {
@@ -251,14 +232,4 @@ void debug_put_fixed2( uint16_t c )
 	if ( l || ( tmp != 0 ) ) debug_putc( '0' + tmp );
 
 	debug_putc( '0' + ( uint8_t )c );
-}
-
-void debug_put_newline( void )
-{
-	debug_putc( '\n' );
-}
-
-uint32_t debug_is_initialized( void )
-{
-	return debug_init_done;
 }
