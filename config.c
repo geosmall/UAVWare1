@@ -12,7 +12,7 @@ struct params_s {
 };
 
 
-void storage_set_defaults( void )
+void config_set_defaults( void )
 {
 
 	config.version = 55;

@@ -1,5 +1,6 @@
+#include <stdlib.h>
 #include "scheduler.h"
-#include "stm32f4xx.h"
+// #include "stm32f4xx.h"
 #include "../core/main.h"
 
 
@@ -9,7 +10,7 @@ static sTask_t sch_tasks_g[SCH_MAX_TASKS];
 
 // Tick count
 static volatile uint32_t tick_count_g = 0;
-
+static volatile bool scheduler_overrun_flag = false;
 
 /*----------------------------------------------------------------------------*-
 
@@ -54,7 +55,7 @@ void sch_tick_handler( void )
   // check against limit
   if ( tick_count_g > SCH_TICK_COUNT_LIMIT ) {
     // One or more tasks has taken too long to complete
-    failloop( 4 );
+    scheduler_overrun_flag = true;
   }
 
   // LL_GPIO_ResetOutputPin( testPin1_GPIO_Port, testPin1_Pin );
@@ -68,13 +69,14 @@ void sch_init_hz( const uint32_t TICKhz )
     sch_tasks_g[Task_id].pTask = SCH_NULL_PTR; // Set pTask to "null pointer"
   }
   UVOS_TIME_RegisterTickCallback( sch_tick_handler );
-  UVOS_TIME_init( TICKhz );
+  UVOS_TIME_sched_init( TICKhz );
 }
 
 /*----------------------------------------------------------------------------*/
 void sch_start( void )
 {
   tick_count_g = 0;
+  scheduler_overrun_flag = false;
   UVOS_TIME_sched_start();
 }
 
@@ -114,10 +116,10 @@ void sch_stop( void )
      None.
 
   RETURN VALUE:
-     None.
+     scheduler_overrun_flag.
 
 -*----------------------------------------------------------------------------*/
-void sch_dispatch_tasks( void )
+int sch_dispatch_tasks( void )
 {
 
 
@@ -153,6 +155,9 @@ void sch_dispatch_tasks( void )
 
   // The scheduler enters idle mode at this point
   // __WFI();
+
+  return scheduler_overrun_flag;
+
 }
 
 /*----------------------------------------------------------------------------*-
@@ -191,12 +196,12 @@ void sch_dispatch_tasks( void )
      - if an attempt is made to schedule a "one shot" task
 
   RETURN VALUE:
-     None.
+     Success or failure.
 
 -*----------------------------------------------------------------------------*/
-void sch_add_task( void ( * pTask )(),
-                   const uint32_t DELAY,
-                   const uint32_t PERIOD )
+int sch_add_task( void ( * pTask )(),
+                  const uint32_t DELAY,
+                  const uint32_t PERIOD )
 {
   uint32_t Task_id = 0;
 
@@ -209,13 +214,13 @@ void sch_add_task( void ( * pTask )(),
   // Have we reached the end of the list?
   if ( Task_id == SCH_MAX_TASKS ) {
     // Task list is full - fatal error
-    failloop( 4 );
+    return EXIT_FAILURE;
   }
 
   // Check for "one shot" tasks
   if ( PERIOD == 0 ) {
     // We do not allow "one shot" tasks (all tasks must be periodic)
-    failloop( 4 );
+    return EXIT_FAILURE;
   }
 
   // If we're here, there is a space in the task array
@@ -224,4 +229,6 @@ void sch_add_task( void ( * pTask )(),
 
   sch_tasks_g[Task_id].Delay  = DELAY + 1;
   sch_tasks_g[Task_id].Period = PERIOD;
+
+  return EXIT_SUCCESS;
 }

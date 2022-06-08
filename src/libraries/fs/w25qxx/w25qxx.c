@@ -1,8 +1,9 @@
 #include "src/uvos/uvos.h"
 #include "w25qxx.h"
-#include "wiring_time.h"
+// #include "wiring_time.h"
 #include "src/core/spi.h"
 #include "src/uvos/uvos_spi.h"
+#include "src/uvos/uvos_time.h"
 #include "src/uvos/hardware.h"
 #include "src/libraries/printf/printf.h"
 
@@ -18,8 +19,8 @@
 
 #define SPI_WRITE( b ) spi_xfer( FLASH_SPI, b )
 #define SPI_WRITE_READ( b, readB ) *readB = spi_xfer( FLASH_SPI, b )
-#define WAIT1_Waitms( ms ) delay( ms )
-#define WAIT1_Waitus( us ) delayMicroseconds( us )
+#define WAIT1_Waitms( ms ) time_delay_us( ms * 1000 )
+#define WAIT1_Waitus( us ) time_delay_us( us )
 
 // =======================================================
 

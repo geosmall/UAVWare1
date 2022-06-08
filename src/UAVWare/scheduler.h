@@ -25,12 +25,12 @@ typedef struct {
 
 // ------ Public function prototypes -----------------------------------------
 
-void sch_init( void );
+void sch_init_hz( const uint32_t TICKhz );
 void sch_start( void );
-void sch_dispatch_tasks( void );
+int sch_dispatch_tasks( void );
 void sch_tick_handler( void );
 
-void sch_add_task( void ( * pTask )(),
+int sch_add_task( void ( * pTask )(),
                    const uint32_t DELAY,    // Offset (Ticks)
                    const uint32_t PERIOD ); // Period (Ticks)
 

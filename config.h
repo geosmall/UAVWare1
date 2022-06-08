@@ -87,7 +87,7 @@ struct config_s {
 
 extern config_t config;
 
-void storage_set_defaults( void );
+void config_set_defaults( void );
 uint32_t get_param_index_from_id( char * param_id );
 uint32_t get_sizeof_param_index( void );
 char * get_param_name( uint32_t index );

@@ -2,8 +2,6 @@
 
 // defines for things that do not normally need changing
 
-#define OAV_LOOP_FREQ_HZ 1000
-
 #define PIDNUMBER 3
 
 // #define PI 3.1415926535897932384626433832795

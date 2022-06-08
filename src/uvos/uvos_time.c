@@ -24,20 +24,21 @@ void SCHEDULER_TIM_IRQHandler( void )
 }
 #endif // defined ( SCHEDULER_TIM_IRQHandler )
 
-void UVOS_TIME_init( const uint32_t tick_hz )
+void UVOS_TIME_init( void )
 {
-
-	uint32_t InitialAutoreload = 0;
-
 	/* TIMEBASE_TIM shall be 32 bit free running counter with 1 uSec tick */
 
 	/* Set the pre-scaler value to have TIMBASE_TIM counter clock equal to 1MHz */
 	LL_TIM_SetPrescaler( TIMEBASE_TIM, __LL_TIM_CALC_PSC( ( SystemCoreClock ), 1000000 ) );
-
 	/* Enable counter */
 	LL_TIM_EnableCounter( TIMEBASE_TIM );
+}
 
-	/* SCHEDULER_TIM shall generate scheduler interrupt at F_LOOP Hz */
+void UVOS_TIME_sched_init( const uint32_t tick_hz )
+{
+	/* SCHEDULER_TIM shall generate scheduler interrupt at LOOP_FREQ_HZ */
+
+	uint32_t InitialAutoreload = 0;
 
 	/* Set the pre-scaler value to have TIMBASE_TIM counter clock equal to 12 MHZ */
 	LL_TIM_SetPrescaler( SCHEDULER_TIM, __LL_TIM_CALC_PSC( ( SystemCoreClock ), 12000000 ) );
@@ -51,12 +52,6 @@ void UVOS_TIME_init( const uint32_t tick_hz )
 
 	/* Enable the update interrupt */
 	LL_TIM_EnableIT_UPDATE( SCHEDULER_TIM );
-
-	/* Enable counter */
-	// LL_TIM_EnableCounter( SCHEDULER_TIM );
-
-	/* Force update generation */
-	// LL_TIM_GenerateEvent_UPDATE( SCHEDULER_TIM );
 
 }
 

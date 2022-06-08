@@ -8,5 +8,6 @@
 #include "rc.h"
 #include "scheduler.h"
 #include "telem.h"
+#include "time.h"
 #include "uavw_init.h"
 

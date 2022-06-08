@@ -1,0 +1,9 @@
+
+channel_X_pwm: 1000 to 2000 PWM,
+
+servoX.attach(servoXPin, 900, 2100); //pin, min PWM value, max PWM value
+Servo channels (servo(X)): command servo angle from 0-180 degrees (1000 to 2000 PWM)
+
+OneShot125 motors (mX_command_PWM): command OneShot125 ESC from 125 to 250us pulse length
+
+  
