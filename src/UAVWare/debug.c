@@ -35,7 +35,7 @@ void debug_puts( char * data, uint16_t len )
 	}
 }
 
-void debug(const char *data)
+void debug(const char * data)
 {
 	uint8_t c = *data++;
 	while ( c ) {

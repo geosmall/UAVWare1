@@ -11,3 +11,4 @@
 #include "time.h"
 #include "uavw_init.h"
 
+#include "uavw_defines.h"

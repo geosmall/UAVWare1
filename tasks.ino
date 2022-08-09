@@ -5,7 +5,7 @@ void RC_TASK_init ( void )
 
 void RC_TASK_update ( void )
 {
-	rc_update();
+
 }
 
 //------------------------------------------

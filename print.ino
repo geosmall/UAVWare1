@@ -21,7 +21,6 @@ static char prn_buffer[PRN_BUFFER_SIZE] = {0};
 //   }
 // }
 
-
 void printRadioData()
 {
   if ( current_time - print_counter > 10000 ) {
@@ -41,14 +40,7 @@ void printRadioData()
     uint16_t prn_buflen \
       = snprintf_\
         ( prn_buffer, sizeof( prn_buffer ), \
-          "\
-          CH1: %8d \
-          CH2: %8d \
-          CH3: %8d \
-          CH4: %8d \
-          CH5: %8d \
-          CH6: %8d \
-          \r\n", \
+          "CH1: %-6d CH2: %-6d CH3: %-6d CH4: %-6d CH5: %-6d CH6: %-6d\r\n", \
           channel_1_pwm, \
           channel_2_pwm, \
           channel_3_pwm, \

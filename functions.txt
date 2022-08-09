@@ -1,0 +1,197 @@
+// config.c
+
+void config_set_defaults( void )
+uint32_t get_sizeof_param_index( void )
+char * get_param_name( uint32_t index )
+uintptr_t get_param_offset( uint32_t index )
+MAV_PARAM_TYPE get_param_mav_type( uint32_t index )
+bool get_param_read_write( uint32_t index )
+bool check_param_match( const char * paramName, char * key )
+uint32_t get_param_index_from_id( char * param_id ) // https://ardupilot.org/dev/docs/mavlink-get-set-params.html
+
+// Madgwick.ino
+
+void Madgwick( float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz, float invSampleFreq )
+void Madgwick6DOF( float gx, float gy, float gz, float ax, float ay, float az, float invSampleFreq )
+
+// control.ino
+
+void controlANGLE()
+void controlANGLE2()
+void controlRATE()
+
+// mixer.ino
+
+void controlMixer()
+
+// print.ino
+
+void printRadioData()
+void printDesiredState()
+void printGyroData()
+void printAccelData()
+void printMagData()
+void printRollPitchYaw()
+void printPIDoutput()
+void printMotorCommands()
+void printServoCommands()
+void printLoopRate()
+
+// tasks.ino
+
+void RC_TASK_init ( void )
+void RC_TASK_update ( void )
+void SYS_STATS_TASK_init ( void )
+void SYS_STATS_TASK_update( void )
+void HEARTBEAT_TASK_init ( void )
+void HEARTBEAT_TASK_update ( void )
+
+// UAVWare.ino
+
+
+void setup()
+{
+
+  // Initialize UAVWare services
+  if ( UAVW_init() != EXIT_SUCCESS ) {
+    failloop( 4 );
+  }
+
+  // Set config struct default values
+  config_set_defaults();
+
+  // LED on to signal startup & not to disturb vehicle during IMU calibration
+  void led_status_on();
+
+  time_delay_us( 10000 );
+
+  // Set IMU full-scale ranges for accel and gyro
+  mpu_set_fullscale_gyro_range( GYRO_SCALE );
+  mpu_set_fullscale_accel_range( ACCEL_SCALE );
+
+  //Set radio channels to default (safe) values before entering main loop
+
+  // Get IMU error to zero accelerometer and gyro readings, assuming vehicle is level
+  calculate_IMU_error();
+
+  time_delay_us( 10000 );
+
+  //Arm servo channels
+  // servoX.write(0); //command servo angle from 0-180 degrees (1000 to 2000 PWM)
+
+  time_delay_us( 10000 );
+
+  //Arm OneShot125 motors
+  // mX_command_PWM = 125; //command OneShot125 ESC from 125 to 250us pulse length
+  // commandMotors();
+
+  time_delay_us( 100000 );
+
+  actuator_update_outputs();
+  actuator_enable_outputs();
+
+  // Warm up the loop
+  calibrateAttitude(); // Helps to warm up IMU and Madgwick filter before finally entering main loop
+
+  // Indicate entering main loop with 3 quick blinks
+  setupBlink( 3, 160000, 70000 ); // NumBlinks, upTime (us), downTime (us)
+
+  while ( 1 ) {
+
+    prev_time = current_time;
+    current_time = micros();
+    dt = ( current_time - prev_time ) / 1000000.0;
+
+    loopBlink(); // Indicate we are in main loop with short blink every 1.5 seconds
+
+    // Print data at 100hz (uncomment one at a time for troubleshooting) - SELECT ONE:
+
+    // Get vehicle state
+    getIMUdata(); // Pulls raw gyro, accelerometer, and magnetometer data from IMU and LP filters to remove noise
+    Madgwick( GyroX, -GyroY, -GyroZ, -AccX, AccY, AccZ, MagY, -MagX, MagZ, dt ); // Updates roll_IMU, pitch_IMU, and yaw_IMU (degrees)
+
+    // Compute desired state
+    getDesState(); // Convert raw commands to normalized values based on saturated control limits
+
+    // PID Controller - SELECT ONE:
+    controlANGLE();  // stabilize on angle setpoint
+    // controlANGLE2(); // stabilize on angle setpoint using cascaded method
+    // controlRATE();   // stabilize on rate setpoint
+
+    // Actuator mixing and scaling to PWM values
+    controlMixer(); // mixes PID outputs to scaled actuator commands -- custom mixing assignments done here
+    scaleCommands(); // scales motor commands to 125 to 250 range (oneshot125 protocol) and servo PWM commands to 0 to 180 (for servo library)
+
+    // Throttle cut check
+    throttleCut(); // directly sets motor commands to low based on state of ch5
+
+    // Command actuators
+    // commandMotors(); // sends command pulses to each motor pin using OneShot125 protocol
+    // servoX.write( sX_command_PWM );
+
+    // Get vehicle commands for next loop iteration
+    // getCommands(); // pulls current available radio commands
+    rc_update();
+
+    // failSafe();    // prevent failures in event of bad receiver connection, defaults to failsafe values assigned in setup
+
+    // Regulate loop rate
+    loopRate( 2000 ); // do not exceed 2000Hz, all filter parameters tuned to 2000Hz by default
+
+  }
+
+}
+
+
+const uint32_t hb_interval = 1000; //heartbeat interval in milliseconds - 1 second
+uint32_t t_last_hb = 0;
+const uint32_t sys_stat_interval = 100; //10 system status messages per second
+uint32_t t_last_sys_stat = 0;
+
+void loop ()
+{
+  // rc_update();
+  telem_update();
+  if ( ( millis() - t_last_hb ) > hb_interval ) {
+    telem_heartbeat();
+    t_last_hb = millis();
+  }
+  if ( ( millis() - t_last_sys_stat ) > sys_stat_interval ) {
+    telem_system_stats();
+    telem_send_queued_params();
+    t_last_sys_stat = millis();
+  }
+}
+
+void getIMUdata()
+void calculate_IMU_error()
+void calibrateAttitude()
+void getDesState()
+void scaleCommands()
+void throttleCut()
+
+//========================================================================================================================//
+
+// HELPER FUNCTIONS
+
+float invSqrt( float x )
+void loopRate( int freq )
+void loopBlink()
+void setupBlink( int numBlinks, int upTime_us, int downTime_us )
+
+// 2 - low battery at powerup - if enabled by config
+// 3 - radio chip not detected
+// 4 - Gyro not found
+// 5 - clock, interrupts, systick, bad code
+// 6 - flash write error
+// 7 - scheduler fault
+extern "C" void failloop( int val )
+
+
+void failSafe() {}
+
+void commandMotors() {}
+
+float floatFaderLinear(float param, float param_min, float param_max, float fadeTime, int state, int loopFreq){}
+
+float switchRollYaw(int reverseRoll, int reverseYaw) {}

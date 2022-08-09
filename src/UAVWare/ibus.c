@@ -3,7 +3,7 @@
 
 
 /* Static variables */
-static uint8_t uart_rx_buffer[IBUS_LENGTH] = {0};
+static uint8_t uart_rx_buffer[ IBUS_LENGTH ] = { 0 };
 static uint8_t ibus_lost_flag = 0;
 
 /**

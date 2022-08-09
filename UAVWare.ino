@@ -7,8 +7,8 @@
 //========================================================================================================================//
 
 // Uncomment only one IMU
-#define USE_MPU_6DOF //default
-// #define USE_MPU_9DOF
+// #define USE_MPU_6DOF //default
+#define USE_MPU_9DOF
 
 // Uncomment only one full scale gyro range (deg/sec)
 #define GYRO_250DPS //default
@@ -82,9 +82,11 @@ unsigned long channel_1_pwm_prev, channel_2_pwm_prev, channel_3_pwm_prev, channe
 //   bool sbusFailSafe;
 //   bool sbusLostFrame;
 // #endif
-uint16_t rcChannels[16];
-bool rcFailSafe;
-bool rcLostFrame;
+// uint16_t rcChannels[16];
+// bool rcFailSafe;
+// bool rcLostFrame;
+#define NUM_CHANNELS 10
+uint16_t rc_command_uSec[ NUM_CHANNELS ];
 
 // IMU:
 float AccX, AccY, AccZ;
@@ -190,10 +192,10 @@ void setup()
     loopBlink(); // Indicate we are in main loop with short blink every 1.5 seconds
 
     // Print data at 100hz (uncomment one at a time for troubleshooting) - SELECT ONE:
-    // printRadioData();     // radio pwm values (expected: 1000 to 2000)
+    printRadioData();     // radio pwm values (expected: 1000 to 2000)
     // printDesiredState();  // prints desired vehicle state commanded in either degrees or deg/sec (expected: +/- maxAXIS for roll, pitch, yaw; 0 to 1 for throttle)
     // printGyroData();      // prints filtered gyro data direct from IMU (expected: ~ -250 to 250, 0 at rest)
-    printAccelData();     // prints filtered accelerometer data direct from IMU (expected: ~ -2 to 2; x,y 0 when level, z 1 when level)
+    // printAccelData();     // prints filtered accelerometer data direct from IMU (expected: ~ -2 to 2; x,y 0 when level, z 1 when level)
     // printMagData();       // prints filtered magnetometer data direct from IMU (expected: ~ -300 to 300)
     // printRollPitchYaw();  // prints roll, pitch, and yaw angles in degrees from Madgwick filter (expected: degrees, 0 when level)
     // printPIDoutput();     // prints computed stabilized PID variables from controller and desired setpoint (expected: ~ -1 to 1)
@@ -221,7 +223,7 @@ void setup()
     throttleCut(); // directly sets motor commands to low based on state of ch5
 
     // Command actuators
-    // commandMotors(); // sends command pulses to each motor pin using OneShot125 protocol
+    commandMotors(); // sends command pulses to each motor pin using OneShot125 protocol
     // servo1.write( s1_command_PWM );
     // servo2.write( s2_command_PWM );
     // servo3.write( s3_command_PWM );
@@ -231,10 +233,9 @@ void setup()
     // servo7.write( s7_command_PWM );
 
     // Get vehicle commands for next loop iteration
-    // getCommands(); // pulls current available radio commands
-    rc_update();
+    getCommands(); // pulls current available radio commands
 
-    // failSafe();    // prevent failures in event of bad receiver connection, defaults to failsafe values assigned in setup
+    failSafe();    // prevent failures in event of bad receiver connection, defaults to failsafe values assigned in setup
 
     // Regulate loop rate
     loopRate( 2000 ); // do not exceed 2000Hz, all filter parameters tuned to 2000Hz by default
@@ -296,7 +297,6 @@ void loop ()
     t_last_sys_stat = millis();
   }
 }
-
 
 void getIMUdata()
 {
@@ -483,6 +483,196 @@ void scaleCommands()
   s7_command_PWM = constrain( s7_command_PWM, 0, 180 );
 
 }
+
+void getCommands()
+{
+  //DESCRIPTION: Get raw PWM values for every channel from the radio
+  /*
+   * Updates radio PWM commands in loop based on current available commands. channel_x_pwm is the raw command used in the rest of
+   * the loop. If using a PWM or PPM receiver, the radio commands are retrieved from a function in the readPWM file separate from this one which
+   * is running a bunch of interrupts to continuously update the radio readings. If using an SBUS receiver, the alues are pulled from the SBUS library directly.
+   * The raw radio commands are filtered with a first order low-pass filter to eliminate any really high frequency noise.
+   */
+
+// #if defined USE_PPM_RX || defined USE_PWM_RX
+//   channel_1_pwm = getRadioPWM( 1 );
+//   channel_2_pwm = getRadioPWM( 2 );
+//   channel_3_pwm = getRadioPWM( 3 );
+//   channel_4_pwm = getRadioPWM( 4 );
+//   channel_5_pwm = getRadioPWM( 5 );
+//   channel_6_pwm = getRadioPWM( 6 );
+
+// #elif defined USE_SBUS_RX
+//   if ( sbus.read( &sbusChannels[0], &sbusFailSafe, &sbusLostFrame ) ) {
+//     //sBus scaling below is for Taranis-Plus and X4R-SB
+//     float scale = 0.615;
+//     float bias  = 895.0;
+//     channel_1_pwm = sbusChannels[0] * scale + bias;
+//     channel_2_pwm = sbusChannels[1] * scale + bias;
+//     channel_3_pwm = sbusChannels[2] * scale + bias;
+//     channel_4_pwm = sbusChannels[3] * scale + bias;
+//     channel_5_pwm = sbusChannels[4] * scale + bias;
+//     channel_6_pwm = sbusChannels[5] * scale + bias;
+//   }
+// #endif
+
+  rc_update( rc_command_uSec, COUNT_OF( rc_command_uSec ) );
+  channel_1_pwm = rc_command_uSec[ 2 ]; // thro
+  channel_2_pwm = rc_command_uSec[ 0 ]; // ail
+  channel_3_pwm = rc_command_uSec[ 1 ]; // elev
+  channel_4_pwm = rc_command_uSec[ 3 ]; // rudd
+  channel_5_pwm = rc_command_uSec[ 6 ]; // throttle cut (SWA)
+  channel_6_pwm = rc_command_uSec[ 9 ]; // aux1 (SWD)
+
+  //Low-pass the critical commands and update previous values
+  float b = 0.2; //lower=slower, higher=noiser
+  channel_1_pwm = ( 1.0 - b ) * channel_1_pwm_prev + b * channel_1_pwm;
+  channel_2_pwm = ( 1.0 - b ) * channel_2_pwm_prev + b * channel_2_pwm;
+  channel_3_pwm = ( 1.0 - b ) * channel_3_pwm_prev + b * channel_3_pwm;
+  channel_4_pwm = ( 1.0 - b ) * channel_4_pwm_prev + b * channel_4_pwm;
+  channel_1_pwm_prev = channel_1_pwm;
+  channel_2_pwm_prev = channel_2_pwm;
+  channel_3_pwm_prev = channel_3_pwm;
+  channel_4_pwm_prev = channel_4_pwm;
+}
+
+void failSafe()
+{
+  //DESCRIPTION: If radio gives garbage values, set all commands to default values
+  /*
+   * Radio connection failsafe used to check if the getCommands() function is returning acceptable pwm values. If any of
+   * the commands are lower than 800 or higher than 2200, then we can be certain that there is an issue with the radio
+   * connection (most likely hardware related). If any of the channels show this failure, then all of the radio commands
+   * channel_x_pwm are set to default failsafe values specified in the setup. Comment out this function when troubleshooting
+   * your radio connection in case any extreme values are triggering this function to overwrite the printed variables.
+   */
+  unsigned minVal = 800;
+  unsigned maxVal = 2200;
+  int check1 = 0;
+  int check2 = 0;
+  int check3 = 0;
+  int check4 = 0;
+  int check5 = 0;
+  int check6 = 0;
+
+  //Triggers for failure criteria
+  if ( channel_1_pwm > maxVal || channel_1_pwm < minVal ) check1 = 1;
+  if ( channel_2_pwm > maxVal || channel_2_pwm < minVal ) check2 = 1;
+  if ( channel_3_pwm > maxVal || channel_3_pwm < minVal ) check3 = 1;
+  if ( channel_4_pwm > maxVal || channel_4_pwm < minVal ) check4 = 1;
+  if ( channel_5_pwm > maxVal || channel_5_pwm < minVal ) check5 = 1;
+  if ( channel_6_pwm > maxVal || channel_6_pwm < minVal ) check6 = 1;
+
+  //If any failures, set to default failsafe values
+  if ( ( check1 + check2 + check3 + check4 + check5 + check6 ) > 0 ) {
+    channel_1_pwm = config.channel_1_fs;
+    channel_2_pwm = config.channel_2_fs;
+    channel_3_pwm = config.channel_3_fs;
+    channel_4_pwm = config.channel_4_fs;
+    channel_5_pwm = config.channel_5_fs;
+    channel_6_pwm = config.channel_6_fs;
+  }
+}
+
+void commandMotors()
+{
+  //DESCRIPTION: Send pulses to motor pins, oneshot125 protocol
+  /*
+   * My crude implimentation of OneShot125 protocol which sends 125 - 250us pulses to the ESCs (mXPin). The pulselengths being
+   * sent are mX_command_PWM, computed in scaleCommands(). This may be replaced by something more efficient in the future.
+   */
+}
+
+float floatFaderLinear( float param, float param_min, float param_max, float fadeTime, int state, int loopFreq )
+{
+  //DESCRIPTION: Linearly fades a float type variable between min and max bounds based on desired high or low state and time
+  /*
+   *  Takes in a float variable, desired minimum and maximum bounds, fade time, high or low desired state, and the loop frequency
+   *  and linearly interpolates that param variable between the maximum and minimum bounds. This function can be called in controlMixer()
+   *  and high/low states can be determined by monitoring the state of an auxillarly radio channel. For example, if channel_6_pwm is being
+   *  monitored to switch between two dynamic configurations (hover and forward flight), this function can be called within the logical
+   *  statements in order to fade controller gains, for example between the two dynamic configurations. The 'state' (1 or 0) can be used
+   *  to designate the two final options for that control gain based on the dynamic configuration assignment to the auxillary radio channel.
+   *
+   */
+  float diffParam = ( param_max - param_min ) / ( fadeTime * loopFreq ); //difference to add or subtract from param for each loop iteration for desired fadeTime
+
+  if ( state == 1 ) { //maximum param bound desired, increase param by diffParam for each loop iteration
+    param = param + diffParam;
+  } else if ( state == 0 ) { //minimum param bound desired, decrease param by diffParam for each loop iteration
+    param = param - diffParam;
+  }
+
+  param = constrain( param, param_min, param_max ); //constrain param within max bounds
+
+  return param;
+}
+
+float switchRollYaw( int reverseRoll, int reverseYaw )
+{
+  //DESCRIPTION: Switches roll_des and yaw_des variables for tailsitter-type configurations
+  /*
+   * Takes in two integers (either 1 or -1) corresponding to the desired reversing of the roll axis and yaw axis, respectively.
+   * Reversing of the roll or yaw axis may be needed when switching between the two for some dynamic configurations. Inputs of 1, 1 does not
+   * reverse either of them, while -1, 1 will reverse the output corresponding to the new roll axis.
+   * This function may be replaced in the future by a function that switches the IMU data instead (so that angle can also be estimated with the
+   * IMU tilted 90 degrees from default level).
+   */
+  float switch_holder;
+
+  switch_holder = yaw_des;
+  yaw_des = reverseYaw * roll_des;
+  roll_des = reverseRoll * switch_holder;
+}
+
+#if 0
+void calibrateMagnetometer()
+{
+#if defined USE_MPU_9DOF
+  float success;
+  Serial_println( "Beginning magnetometer calibration in" );
+  Serial_println( "3..." );
+  delay( 1000 );
+  Serial_println( "2..." );
+  delay( 1000 );
+  Serial_println( "1..." );
+  delay( 1000 );
+  Serial_println( "Rotate the IMU about all axes until complete." );
+  Serial_println( " " );
+  success = mpu9250.calibrateMag();
+  if ( success ) {
+    Serial_println( "Calibration Successful!" );
+    Serial_println( "Please comment out the calibrateMagnetometer() function and copy these values into the code:" );
+    Serial_print( "float MagErrorX = " );
+    Serial_print( mpu9250.getMagBiasX_uT() );
+    Serial_println( ";" );
+    Serial_print( "float MagErrorY = " );
+    Serial_print( mpu9250.getMagBiasY_uT() );
+    Serial_println( ";" );
+    Serial_print( "float MagErrorZ = " );
+    Serial_print( mpu9250.getMagBiasZ_uT() );
+    Serial_println( ";" );
+    Serial_print( "float MagScaleX = " );
+    Serial_print( mpu9250.getMagScaleFactorX() );
+    Serial_println( ";" );
+    Serial_print( "float MagScaleY = " );
+    Serial_print( mpu9250.getMagScaleFactorY() );
+    Serial_println( ";" );
+    Serial_print( "float MagScaleZ = " );
+    Serial_print( mpu9250.getMagScaleFactorZ() );
+    Serial_println( ";" );
+    Serial_println( " " );
+    Serial_println( "If you are having trouble with your attitude estimate at a new flying location, repeat this process as needed." );
+  } else {
+    Serial_println( "Calibration Unsuccessful. Please reset the board and try again." );
+  }
+
+  while ( 1 ); //halt code so it won't enter main loop until this function commented out
+#endif
+  Serial_println( "Error: MPU9250 not selected. Cannot calibrate non-existent magnetometer." );
+  while ( 1 ); //halt code so it won't enter main loop until this function commented out
+}
+#endif
 
 void throttleCut()
 {

@@ -1,3 +1,27 @@
+iBus Protocol
+/*
+ *  supports max 14 channels (with messagelength of 0x20 there is room for 14 channels)
+  Example set of bytes coming over the iBUS line for setting servos: 
+    20 40 DB 5 DC 5 54 5 DC 5 E8 3 D0 7 D2 5 E8 3 DC 5 DC 5 DC 5 DC 5 DC 5 DC 5 DA F3
+  Explanation
+    Protocol length: 20 (32d)
+    Command code: 0x40 (64d) 
+    Channel 0: DB 5  -> value 0x5DB (2,3 - roll)
+    Channel 1: DC 5  -> value 0x5Dc (4,5 - pitch)
+    Channel 2: 54 5  -> value 0x554 (6,7 - throttle)
+    Channel 3: DC 5  -> value 0x5DC (8,9 - yaw)
+    Channel 4: E8 3  -> value 0x3E8 (10,11 - VrA)
+    Channel 5: D0 7  -> value 0x7D0 (12,13 - VrB)
+    Channel 6: D2 5  -> value 0x5D2 (14,15 - Switch A)
+    Channel 7: E8 3  -> value 0x3E8 (16,17 - Switch B)
+    Channel 8: DC 5  -> value 0x5DC (18,19 - Switch B)
+    Channel 9: DC 5  -> value 0x5DC (20,21 - Switch B)
+    Channel 10: DC 5 -> value 0x5DC
+    Channel 11: DC 5 -> value 0x5DC
+    Channel 12: DC 5 -> value 0x5DC
+    Channel 13: DC 5 -> value 0x5DC
+    Checksum: DA F3 -> calculated by adding up all previous bytes, total must be FFFF
+ */
 
 RX States
 Reset

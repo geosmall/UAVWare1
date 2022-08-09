@@ -10,7 +10,7 @@ void debug_init(void);
 void debug_putc(uint8_t ch);
 void debug_puts( char * data, uint16_t len );
 void debug_cls(void);
-void debug(const char *data);
+void debug(const char * data);
 void debug_cls(void);
 void debug_put_hex8(uint8_t val);
 void debug_put_hex16(uint16_t val);
